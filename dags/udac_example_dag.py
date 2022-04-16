@@ -63,7 +63,7 @@ load_user_dimension_table = LoadDimensionOperator(
     source_table="staging_events",
     sql=SqlQueries.user_table_insert,
     primary_key="userid",
-    delete_or_upsert="delete",
+    delete_existing=True,
     dag=dag
 )
 
@@ -74,7 +74,7 @@ load_song_dimension_table = LoadDimensionOperator(
     source_table="staging_songs",
     sql=SqlQueries.song_table_insert,
     primary_key="song_id",
-    delete_or_upsert="delete",
+    delete_existing=True,
     dag=dag
 )
 
@@ -85,7 +85,7 @@ load_artist_dimension_table = LoadDimensionOperator(
     source_table="staging_songs",
     sql=SqlQueries.artist_table_insert,
     primary_key="artist_id",
-    delete_or_upsert="upsert",
+    delete_existing=False,
     dag=dag
 )
 
@@ -96,7 +96,7 @@ load_time_dimension_table = LoadDimensionOperator(
     source_table="songplays",
     sql=SqlQueries.time_table_insert,
     primary_key="start_time",
-    delete_or_upsert="upsert",
+    delete_existing=False,
     dag=dag
 )
 

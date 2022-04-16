@@ -14,7 +14,7 @@ class LoadDimensionOperator(BaseOperator):
                  source_table="",
                  sql="",
                  primary_key="",
-                 delete_or_upsert="",
+                 delete_existing=False
                  *args, **kwargs):
 
         super(LoadDimensionOperator, self).__init__(*args, **kwargs)
@@ -24,27 +24,22 @@ class LoadDimensionOperator(BaseOperator):
         self.source_table = source_table
         self.sql = sql
         self.primary_key = primary_key
-        self.delete_or_upsert = delete_or_upsert
+        self.delete_existing = delete_existing
 
     def execute(self, context):
         self.log.info('Running LoadDimensionOperator')
         redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)
 
-        if self.delete_or_upsert == "delete":
+        if self.delete_existing == True:
             self.log.info(f"Deleting and re-inserting all data into {self.table}")
-            redshift.run(f"DELETE FROM {self.table}") 
-            redshift.run(f"INSERT INTO {self.table} ({self.sql})")
-        elif self.delete_or_upsert == "upsert":
-            self.log.info(f"Updating existing data and appending into {self.table}")
-
             redshift.run(f"""
-                CREATE TABLE upsert_stage (LIKE {self.table});
-                INSERT INTO upsert_stage ({self.sql});
-                DELETE FROM {self.table} 
-                    USING upsert_stage
-                    WHERE {self.table}.{self.primary_key} = upsert_stage.{self.primary_key};
-                INSERT INTO {self.table}
-                    (SELECT * FROM upsert_stage);
-                DROP TABLE upsert_stage;
+                DELETE FROM {self.table};
             """)
+        else:
+            self.log.info(f"Appending into {self.table}")
+
+        redshift.run(f"""
+            INSERT INTO {self.table} ({self.sql});
+        """)
+
         self.log.info(f"Finished loading {self.table}")
